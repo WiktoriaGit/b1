@@ -52,3 +52,16 @@ if not os.path.exists("uploaded_models"):
     os.makedirs("uploaded_models")
 
 app.mount("/uploaded_models", StaticFiles(directory="uploaded_models"), name="uploaded_models")
+origins = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "file://",  # <-- potrzebne przy otwieraniu HTML bez serwera
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
