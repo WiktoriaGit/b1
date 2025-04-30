@@ -1,7 +1,7 @@
-from fastapi import FastAPI #tworzy aplikacje
-from fastapi.middleware.cors import CORSMiddleware #łączy frontend z backendem
-from fastapi.staticfiles import StaticFiles #do obsługi folderu z plikami .glb lokalnie
-from fastapi.responses import StreamingResponse #do zwracania kodów QR
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 
 from .users import router as users_router
 from .exhibits import router as exhibit_router
@@ -14,40 +14,32 @@ import qrcode
 import io
 
 # Tworzenie tabel w bazie danych
-#------------------------------
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+# Middleware CORS – musi być *przed* routerami!
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8080", 
+        "https://wm-frontend-one.vercel.app"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Rejestracja routerów
-#------------------------------
 app.include_router(users_router)
 app.include_router(exhibit_router)
 
-
-# CORS - komunikacja frontendu Vercel + lokalnie z backendem
-#------------------------------
-origins = [
-    "http://localhost:8080", # lokalny frontend (np. podczas testów)
-    "https://wm-frontend-one.vercel.app"  # frontend na Vercelu
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://wm-frontend-one.vercel.app"],  # komu pozwalamy
-    allow_credentials=True, # pozwól na ciasteczka/tokeny
-    allow_methods=["*"],    # pozwól na wszystkie metody (GET, POST, itd.)
-    allow_headers=["*"],    # pozwól na dowolne nagłówki (np. Authorization)
-)
-
-
-#Endpoint do generowania kodów QR
-#------------------------------
+# Endpoint do generowania kodów QR
 @app.get("/qrcode/{exhibit_id}")
 def generate_qr(exhibit_id: int):
     base_url = "https://wm-frontend-one.vercel.app/view.html"
     full_url = f"{base_url}?id={exhibit_id}"
-    qr_img = qrcode.make(full_url) #biblioteka qrcode do tworzenia obrazków
+    qr_img = qrcode.make(full_url)
 
     buf = io.BytesIO()
     qr_img.save(buf, format="PNG")
@@ -55,8 +47,8 @@ def generate_qr(exhibit_id: int):
 
     return StreamingResponse(buf, media_type="image/png")
 
-#  Obsługuje folder, w którym są lokalnie pliki
+# Obsługa folderu z lokalnymi modelami
 if not os.path.exists("uploaded_models"):
     os.makedirs("uploaded_models")
-    
+
 app.mount("/uploaded_models", StaticFiles(directory="uploaded_models"), name="uploaded_models")
