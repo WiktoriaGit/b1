@@ -18,12 +18,13 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# Middleware CORS – musi być *przed* routerami!
+# ✅ Middleware CORS – tylko jedna, poprawna definicja
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:8080", 
-        "https://wm-frontend-one.vercel.app"
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "https://muzeum-hdhf8cwuj-wikis-projects-4998e787.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -37,7 +38,7 @@ app.include_router(exhibit_router)
 # Endpoint do generowania kodów QR
 @app.get("/qrcode/{exhibit_id}")
 def generate_qr(exhibit_id: int):
-    base_url = "https://wm-frontend-one.vercel.app/view.html"
+    base_url = "https://muzeum-hdhf8cwuj-wikis-projects-4998e787.vercel.app/view.html"
     full_url = f"{base_url}?id={exhibit_id}"
     qr_img = qrcode.make(full_url)
 
@@ -52,16 +53,3 @@ if not os.path.exists("uploaded_models"):
     os.makedirs("uploaded_models")
 
 app.mount("/uploaded_models", StaticFiles(directory="uploaded_models"), name="uploaded_models")
-origins = [
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-    "file://",  # <-- potrzebne przy otwieraniu HTML bez serwera
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
